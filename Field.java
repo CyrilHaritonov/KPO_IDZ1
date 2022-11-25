@@ -1,15 +1,12 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public class Field {
     static class Cell {
-        String color;
-        double s;
-        double ss;
-        int x;
-        int y;
+        private String color;
+        private double s;
+        private double ss;
+        private int x;
+        private int y;
         Cell(String color, double s, double ss, int x, int y) {
             this.color = color;
             this.s = s;
@@ -60,8 +57,8 @@ public class Field {
     }
 
     static class CellWithR{
-        double R = 0;
-        final Cell cell;
+        private double R = 0;
+        private final Cell cell;
         CellWithR (Cell cell) {
             this.cell = cell;
         }
@@ -78,7 +75,7 @@ public class Field {
             return cell;
         }
     }
-    List<List<Field.Cell>> field;
+    private final List<List<Field.Cell>> field;
     Field() {
         List<List<Field.Cell>> gamingField = new ArrayList<>();
         for (int i = 1; i <= 8; i++) {
@@ -93,9 +90,9 @@ public class Field {
                     ss = 0.8;
                 }
                 if (i == 4 && j == 4 || i == 5 && j == 5) {
-                    row.add(new Cell("белый", s, ss, i, j));
-                } else  if (i == 4 && j == 5 || i == 5 && j == 4) {
                     row.add(new Cell("черный", s, ss, i, j));
+                } else  if (i == 4 && j == 5 || i == 5 && j == 4) {
+                    row.add(new Cell("белый", s, ss, i, j));
                 } else {
                     row.add(new Cell("none", s, ss, i, j));
                 }
@@ -137,7 +134,9 @@ public class Field {
             int[] offsets = {-1, 0, 1};
             for (int offsetX: offsets) {
                 for (int offsetY: offsets) {
-                    if (!(offsetX == 0 && offsetY == 0) && checkForCell(freeCells, cell.getX() + offsetX, cell.getY() + offsetY)) {
+                    if (!(offsetX == 0 && offsetY == 0)
+                            && checkForCell(freeCells, cell.getX() + offsetX, cell.getY() + offsetY)
+                            && !checkForCell(answer.stream().map(CellWithR::getCell).toList(), cell.getX() + offsetX, cell.getY() + offsetY)) {
                         answer.add(new CellWithR(getCell(cell.getX() + offsetX, cell.getY() + offsetY)));
                     }
                 }
@@ -154,11 +153,14 @@ public class Field {
             for (int i = 1; i < 8; i++) {
                 if (!(offset[0] == 0 && offset[1] == 0) && checkForCellInField(cell.getX() + offset[0]*i, cell.getY() + offset[1]*i)) {
                     Field.Cell cellToCheck = getCell(cell.getX() + offset[0]*i, cell.getY() + offset[1]*i);
-                    if (Objects.equals(color, cellToCheck.getColor())) {
+                    if (Objects.equals(enemyColor, cellToCheck.getColor())) {
                         partOfAnswer.add(cellToCheck);
                     }
-                    if (Objects.equals(enemyColor, cellToCheck.getColor())) {
+                    if (Objects.equals(color, cellToCheck.getColor())) {
                         answer.addAll(partOfAnswer);
+                        break;
+                    }
+                    if (Objects.equals("none", cellToCheck.getColor())) {
                         break;
                     }
                 }
@@ -174,12 +176,12 @@ public class Field {
         } else if (Objects.equals(color, "черный")) {
             enemyColor = "белый";
         }
-        getCellsToClosureWith(cell, color, enemyColor).forEach((item) -> {
+        getCellsToClosureWith(cell, enemyColor, color).forEach((item) -> {
             item.setColor(color);
         });
     }
 
-    String AIMove (String playerColor) {
+    List<Field.CellWithR> getPossibleMoves (String playerColor) {
         String enemyColor;
         if (Objects.equals(playerColor, "белый")) {
             enemyColor = "черный";
@@ -189,33 +191,26 @@ public class Field {
         List<Field.CellWithR> cellsSuitableForMove = getFreeNeighbouringCells(enemyColor);
         for (Field.CellWithR cellSuitableForMove: cellsSuitableForMove) {
             cellSuitableForMove.setR(cellSuitableForMove.getCell().getSs());
-            List<Field.Cell> closure = getCellsToClosureWith(cellSuitableForMove.getCell(), playerColor, enemyColor);
+            List<Field.Cell> closure = getCellsToClosureWith(cellSuitableForMove.getCell(), enemyColor, playerColor);
             for (Field.Cell cellFromClosure: closure) {
                 int[] offset = {0, 0};
                 if (cellSuitableForMove.getCell().getX() - cellFromClosure.getX() != 0) {
-                    offset[0] = (cellSuitableForMove.getCell().getX() - cellFromClosure.getX())/Math.abs(cellSuitableForMove.getCell().getX() - cellFromClosure.getX());
+                    offset[0] = (cellFromClosure.getX() - cellSuitableForMove.getCell().getX())/Math.abs(cellFromClosure.getX() - cellSuitableForMove.getCell().getX());
                 }
                 if (cellSuitableForMove.getCell().getY() - cellFromClosure.y != 0) {
-                    offset[1] = (cellSuitableForMove.getCell().getY() - cellFromClosure.y)/Math.abs(cellSuitableForMove.getCell().getY() - cellFromClosure.y);
+                    offset[1] = (cellFromClosure.y - cellSuitableForMove.getCell().getY())/Math.abs(cellFromClosure.y - cellSuitableForMove.getCell().getY());
                 }
-                for (int i = 1; i < Math.max(Math.abs(cellSuitableForMove.getCell().getX() - cellFromClosure.getX()), Math.abs(cellSuitableForMove.getCell().getY() - cellFromClosure.y)); i++) {
+                for (int i = 1; i <= Math.max(Math.abs(cellSuitableForMove.getCell().getX() - cellFromClosure.getX()), Math.abs(cellSuitableForMove.getCell().getY() - cellFromClosure.y)); i++) {
                     if (checkForCellInField(cellSuitableForMove.getCell().getX() + offset[0]*i, cellSuitableForMove.getCell().getY() + offset[1]*i)) {
                         cellSuitableForMove.R += getCell(cellSuitableForMove.getCell().getX() + offset[0]*i, cellSuitableForMove.getCell().getY() + offset[1]*i).s;
                     }
                 }
             }
         }
-        Optional<Field.CellWithR> answer = cellsSuitableForMove.stream().reduce((firstCell, secondCell) -> firstCell.getR() > secondCell.getR() ? firstCell: secondCell);
-        if (answer.isPresent()) {
-            answer.get().getCell().setColor(playerColor);
-            paintCellsFromClosure(answer.get().getCell(), playerColor);
-            return "Противник (лёгкий бот) сделал ход.";
-        } else {
-           return "Нет ходов для противника (лёгкий бот).";
-        }
+        return cellsSuitableForMove.stream().filter(cellWithR -> cellWithR.getR() >= 1).toList();
     }
 
-    public String playerMove(Cell cellToPaint, String playerColor) {
+    public String paintCell(Cell cellToPaint, String playerColor) {
         String answer;
         if (checkForCellInField(cellToPaint.getX(), cellToPaint.getY())) {
             if (Objects.equals(cellToPaint.getColor(), "none")) {
@@ -231,22 +226,25 @@ public class Field {
         return answer;
     }
 
-    void printField() {
+    void printField(String playerColor) {
         System.out.println("Y");
+        List<Cell> possibleMoves = getPossibleMoves(playerColor).stream().map(CellWithR::getCell).toList();
         for (int i = 8; i > 0; i--) {
-            String output = "";
-            output += i + " ";
+            System.out.print(i + " ");
             for (int j = 0; j < 8; j++) {
-                String color = field.get(i-1).get(j).getColor();
+                String color = field.get(j).get(i-1).getColor();
                 if (Objects.equals(color, "черный")) {
-                    output += "ч ";
+                    System.out.print("ч ");
                 } else if (Objects.equals(color, "белый")) {
-                    output += "б ";
-                } else {
-                    output += "  ";
+                    System.out.print("б ");
+                } else if (checkForCell(possibleMoves, j + 1, i)) {
+                    System.out.print("+ ");
+                }
+                else {
+                    System.out.print("  ");
                 }
             }
-            System.out.println(output);
+            System.out.print("\n");
         }
         System.out.println("  1 2 3 4 5 6 7 8 X");
     }

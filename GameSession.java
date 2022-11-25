@@ -3,25 +3,24 @@ import java.util.Objects;
 import java.util.Scanner;
 
 public class GameSession {
-    Player firstPlayer;
-    Player secondPlayer;
+    private Field gamingField;
 
-    Field gamingField;
+    public void setGamingField(Field gamingField) {
+        this.gamingField = gamingField;
+    }
 
-    Player nowMoves;
+    public Field getGamingField() {
+        return gamingField;
+    }
 
     Boolean checkIfLost() {
         List<Field.Cell> freeCells = gamingField.getCellsOfColor("none");
         List<Field.Cell> blackCells = gamingField.getCellsOfColor("черный");
         List<Field.Cell> whiteCells = gamingField.getCellsOfColor("белый");
-        Field fieldCopy = gamingField.copyField();
-        String whiteMove = fieldCopy.AIMove("белый");
-        fieldCopy = gamingField.copyField();
-        String blackMove = fieldCopy.AIMove("черный");
         if (freeCells.size() == 0 || blackCells.size() == 0 || whiteCells.size() == 0
-                || !Objects.equals(whiteMove, "Противник (лёгкий бот) сделал ход.")
-                || !Objects.equals(blackMove, "Противник (лёгкий бот) сделал ход.")) {
-            gamingField.printField();
+                || (gamingField.getPossibleMoves("белый").size() == 0
+                && gamingField.getPossibleMoves("черный").size() == 0)) {
+            gamingField.printField("белый");
             System.out.println("Игра окончена!");
             determineWinner();
             return false;
@@ -39,21 +38,52 @@ public class GameSession {
         } else {
             System.out.println("Белые выиграли");
         }
+        System.out.println("У белых " + whiteCells.size() + " очков, у черных " + blackCells.size() + " очков.");
     }
 
-    GameSession(Player firstPlayer, Player secondPlayer, Scanner scanner) {
-        this.firstPlayer = firstPlayer;
-        this.secondPlayer = secondPlayer;
+    private Boolean moveEvaluation(Player player, Player enemy, Scanner scanner) {
+        if (player.getClass() != RealPlayer.class) {
+            player.getNextMove(this.gamingField, scanner);
+            return true;
+        }
+        Field gamingFieldCopy = gamingField.copyField();
+        player.getNextMove(gamingFieldCopy, scanner);
+        System.out.print("Ответные ходы противника: ");
+        enemy.printPossibleMoves(gamingFieldCopy);
+        gamingFieldCopy.printField(enemy.getColor());
+        System.out.println("Введите Y чтобы утвердить ход или N чтобы отменить его");
+        String answer = scanner.next();
+        while (!Objects.equals(answer, "Y") && !Objects.equals(answer, "N")) {
+            answer = scanner.next();
+        }
+        if (Objects.equals(answer, "Y")) {
+            this.setGamingField(gamingFieldCopy);
+            return true;
+        } else {
+            System.out.println("Ход отменен");
+            return false;
+        }
+    }
+    GameSession(Player firstPlayer, Player secondPlayer, Scanner scanner, Boolean opponentMoveEvaluation) {
         this.gamingField = new Field();
-        this.nowMoves = firstPlayer;
+        Player nowMoves = firstPlayer;
         while (checkIfLost()){
-            gamingField.printField();
-            if (nowMoves == firstPlayer) {
-                firstPlayer.getNextMove(gamingField, scanner);
-                nowMoves = secondPlayer;
+            gamingField.printField(nowMoves.getColor());
+            if (opponentMoveEvaluation) {
+                if (moveEvaluation(nowMoves, nowMoves == firstPlayer ? secondPlayer : firstPlayer, scanner)) {
+                    if (nowMoves == firstPlayer) {
+                        nowMoves = secondPlayer;
+                    } else {
+                        nowMoves = firstPlayer;
+                    }
+                }
             } else {
-                secondPlayer.getNextMove(gamingField, scanner);
-                nowMoves = firstPlayer;
+                nowMoves.getNextMove(gamingField, scanner);
+                if (nowMoves == firstPlayer) {
+                    nowMoves = secondPlayer;
+                } else {
+                    nowMoves = firstPlayer;
+                }
             }
         }
     }

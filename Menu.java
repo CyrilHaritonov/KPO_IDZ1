@@ -3,20 +3,16 @@ import java.util.Scanner;
 
 public class Menu {
 
-    Scanner scanner;
+    private Scanner scanner;
 
-    public Scanner getScanner() {
-        return scanner;
-    }
-
-    class MenuOption {
+    static class MenuOption {
         interface menuOptionMethod {
             void invokable();
         }
 
-        String text;
-        int key;
-        menuOptionMethod methodToInvoke;
+        private final String text;
+        private final int key;
+        private final menuOptionMethod methodToInvoke;
 
         MenuOption(int key, String text, menuOptionMethod menuOptionMethod) {
             this.key = key;
@@ -26,9 +22,14 @@ public class Menu {
     }
 
     MenuOption[] options = {new MenuOption(1, "Начать игру против бота на лёгком уровне сложности",
-            () -> new GameSession(new RealPlayer("белый"), new EasyAIPLayer("черный"), scanner)),
+            () -> new GameSession(new RealPlayer("черный"), new EasyAIPLayer("белый"), scanner, false)),
 //            MenuOption(2, "Начать игру на продвинутом уровне сложности", ),
-            new MenuOption(3, "Начать игру в режиме игрок против игрока", () -> new GameSession(new RealPlayer("белый"), new RealPlayer("черный"), scanner))};
+            new MenuOption(3, "Начать игру в режиме игрок против игрока",
+                    () -> new GameSession(new RealPlayer("черный"), new RealPlayer("белый"), scanner, false)),
+            new MenuOption(5, "Начать игру против бота на лёгком уровне сложности в режиме с оценкой возможных ответных ходов противника",
+                    () -> new GameSession(new RealPlayer("черный"), new EasyAIPLayer("белый"), scanner, true)),
+            new MenuOption(6, "Начать игру в режиме игрок против игрока с оценкой возможных ответных ходов противника",
+                    () -> new GameSession(new RealPlayer("черный"), new RealPlayer("белый"), scanner, true))};
 //            MenuOption(4, "Посмотреть наилучший результат", )};
 
     Menu() {
@@ -43,8 +44,12 @@ public class Menu {
                 if (Objects.equals(input, "stop")) {
                     System.exit(0);
                 }
-                if (Integer.parseInt(input) == option.key) {
-                    option.methodToInvoke.invokable();
+                try {
+                    if (Integer.parseInt(input) == option.key) {
+                        option.methodToInvoke.invokable();
+                        break;
+                    }
+                } catch (NumberFormatException message) {
                     break;
                 }
             }

@@ -3,7 +3,7 @@ import java.util.Objects;
 import java.util.Scanner;
 
 abstract class Player {
-    String color;
+    private String color;
 
     public String getColor() {
         return color;
@@ -13,6 +13,12 @@ abstract class Player {
         this.color = color;
     }
 
+    void printPossibleMoves(Field currentField) {
+        currentField.getPossibleMoves(this.getColor()).forEach(cellWithR -> {
+            System.out.print("(" + cellWithR.getCell().getX() + " " + cellWithR.getCell().getY() + ") ");
+        });
+        System.out.print("\n");
+    }
     Player(String color) {
         this.setColor(color);
     }
@@ -27,31 +33,32 @@ class RealPlayer extends Player {
 
     @Override
     void getNextMove(Field currentField, Scanner scanner) {
-        // TODO надо проеерять есть ли рядом хоть одна из фишек противника, фишка должна ставиться так, чтобы хотя бы одна из фишек противника
-        System.out.println("Введите координаты точки, в которую хотите совершить ход через пробел в формате x y(игрок " + this.getColor() + "):");
+        System.out.print("Возможные ходы: ");
+        printPossibleMoves(currentField);
+        System.out.println("Введите координаты точки, в которую хотите совершить ход через пробел в формате x y (игрок " + this.getColor() + "):");
         int[] coordinates;
-        while (true) {
-            try {
-                coordinates = new int[]{Integer.parseInt(scanner.next()), Integer.parseInt(scanner.next())};
-            }
-            catch (NumberFormatException a) {
-                System.out.println("Неверные координаты клетки!");
-                continue;
-            }
-            if (!(coordinates[0] > 0 && coordinates[0] < 9) || !(coordinates[1] > 0 && coordinates[1] < 9)) {
-                System.out.println("Неверные координаты клетки!");
-            } else {
-                break;
-            }
+        try {
+            coordinates = new int[]{Integer.parseInt(scanner.next()), Integer.parseInt(scanner.next())};
+        } catch (NumberFormatException a) {
+            System.out.println("Неверные координаты клетки!");
+            getNextMove(currentField, scanner);
+            return;
         }
-        String move = currentField.playerMove(currentField.getCell(coordinates[1], coordinates[0]), this.getColor());
-        if (!Objects.equals(move, "Ок!")) {
+        List<Field.CellWithR> possibleMoves = currentField.getPossibleMoves(this.getColor());
+        if (possibleMoves.size() == 0) {
+            System.out.println("Нет возможных ходов для игрока " + this.getColor());
+        }
+        if (possibleMoves.stream().map(Field.CellWithR::getCell).anyMatch(cell -> cell.getX() == coordinates[0] && cell.getY() == coordinates[1])) {
+            String move = currentField.paintCell(currentField.getCell(coordinates[0], coordinates[1]), this.getColor());
+            if (!Objects.equals(move, "Ок!")) {
+                System.out.println("Неверные координаты клетки!");
+                getNextMove(currentField, scanner);
+            }
+        } else {
+            System.out.println("Неверные координаты клетки!");
             getNextMove(currentField, scanner);
         }
-        System.out.println(move);
     }
-
-    ;
 }
 
 class EasyAIPLayer extends Player {
@@ -62,7 +69,16 @@ class EasyAIPLayer extends Player {
     @Override
     void getNextMove(Field currentField, Scanner scanner) {
         System.out.println("Противник (лёгкий бот) делает ход...");
-        String move = currentField.AIMove(this.getColor());
-        System.out.println(move);
+        List<Field.CellWithR> possibleMoves = currentField.getPossibleMoves(this.getColor());
+        if (possibleMoves.size() > 0) {
+            possibleMoves.stream().reduce((firstCell, secondCell) -> firstCell.getR() > secondCell.getR() ? firstCell : secondCell)
+                    .ifPresent(cellWithR -> {
+                        cellWithR.getCell().setColor(this.getColor());
+                        currentField.paintCellsFromClosure(cellWithR.getCell(), this.getColor());
+                        System.out.println("Противник (лёгкий бот) сделал ход (" + cellWithR.getCell().getX() + " " + cellWithR.getCell().getY() + ")");
+                    });
+        } else {
+            System.out.println("Нет ходов для противника (лёгкий бот).");
+        }
     }
 }
