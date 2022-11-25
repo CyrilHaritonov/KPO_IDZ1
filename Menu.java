@@ -1,4 +1,14 @@
+import java.util.Objects;
+import java.util.Scanner;
+
 public class Menu {
+
+    Scanner scanner;
+
+    public Scanner getScanner() {
+        return scanner;
+    }
+
     class MenuOption {
         interface menuOptionMethod {
             void invokable();
@@ -15,22 +25,30 @@ public class Menu {
         }
     }
 
-    MenuOption[] options = {MenuOption(1, "Начать игру на лёгком уровне сложности", ),
-            MenuOption(2, "Начать игру на продвинутом уровне сложности", ),
-            MenuOption(3, "Начать игру в режиме игрок против игрока", ),
-            MenuOption(4, "Посмотреть наилучший результат", )};
+    MenuOption[] options = {new MenuOption(1, "Начать игру против бота на лёгком уровне сложности",
+            () -> new GameSession(new RealPlayer("белый"), new EasyAIPLayer("черный"), scanner)),
+//            MenuOption(2, "Начать игру на продвинутом уровне сложности", ),
+            new MenuOption(3, "Начать игру в режиме игрок против игрока", () -> new GameSession(new RealPlayer("белый"), new RealPlayer("черный"), scanner))};
+//            MenuOption(4, "Посмотреть наилучший результат", )};
 
     Menu() {
-        for (MenuOption option : options) {
-            System.out.println(option.key + ". " + option.text);
+        this.scanner = new Scanner(System.in);
+        while (true) {
+            for (MenuOption option : options) {
+                System.out.println(option.key + ". " + option.text);
+            }
+            System.out.println("Введите номер нужного пункта меню:");
+            String input = this.scanner.next();
+            for (MenuOption option : options) {
+                if (Objects.equals(input, "stop")) {
+                    System.exit(0);
+                }
+                if (Integer.parseInt(input) == option.key) {
+                    option.methodToInvoke.invokable();
+                    break;
+                }
+            }
         }
-        System.out.println("Введите номер нужного пункта меню:");
-        String input = System.console().readLine();
-       for (MenuOption option: options) {
-           if (Integer.parseInt(input) == option.key) {
-                option.methodToInvoke.invokable();
-                break;
-           }
-       }
+        //scanner.close();
     }
 }
