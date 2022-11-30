@@ -5,7 +5,7 @@ public class Menu {
 
     private Scanner scanner;
 
-    static class MenuOption {
+    private static class MenuOption {
         interface menuOptionMethod {
             void invokable();
         }
@@ -23,14 +23,14 @@ public class Menu {
 
     MenuOption[] options = {new MenuOption(1, "Начать игру против бота на лёгком уровне сложности",
             () -> new GameSession(new RealPlayer("черный"), new EasyAIPLayer("белый"), scanner, false)),
-//            MenuOption(2, "Начать игру на продвинутом уровне сложности", ),
-            new MenuOption(3, "Начать игру в режиме игрок против игрока",
+            new MenuOption(2, "Начать игру в режиме игрок против игрока",
                     () -> new GameSession(new RealPlayer("черный"), new RealPlayer("белый"), scanner, false)),
-            new MenuOption(5, "Начать игру против бота на лёгком уровне сложности в режиме с оценкой возможных ответных ходов противника",
+            new MenuOption(3, "Начать игру против бота на лёгком уровне сложности в режиме с оценкой возможных ответных ходов противника",
                     () -> new GameSession(new RealPlayer("черный"), new EasyAIPLayer("белый"), scanner, true)),
-            new MenuOption(6, "Начать игру в режиме игрок против игрока с оценкой возможных ответных ходов противника",
-                    () -> new GameSession(new RealPlayer("черный"), new RealPlayer("белый"), scanner, true))};
-//            MenuOption(4, "Посмотреть наилучший результат", )};
+            new MenuOption(4, "Начать игру в режиме игрок против игрока с оценкой возможных ответных ходов противника",
+                    () -> new GameSession(new RealPlayer("черный"), new RealPlayer("белый"), scanner, true)),
+            new MenuOption(5, "Посмотреть наилучший результат", Leaderboard::printLeaderboard),
+            new MenuOption(6, "Закрыть игру", () -> System.exit(0))};
 
     Menu() {
         this.scanner = new Scanner(System.in);
@@ -54,6 +54,5 @@ public class Menu {
                 }
             }
         }
-        //scanner.close();
     }
 }
